@@ -112,6 +112,16 @@ const FloorPlan = ({ tables, selectedTable, onTableClick }) => {
         <circle cx="555" cy="23.5" r="1.5" fill="#5a4a3a"/>
         <circle cx="555" cy="29.5" r="1.5" fill="#5a4a3a"/>
 
+        <rect x="80" y="426" width="36" height="20" fill="#d0c9be"/>
+        <rect x="80" y="426" width="36" height="3" fill="#b8b0a4"/>
+        <rect x="80" y="429" width="36" height="15" rx="1" fill="#b0a898"/>
+        <rect x="83" y="431" width="30" height="11" rx="0.5" fill="#c8bfaf" opacity="0.45"/>
+        <rect x="85" y="433" width="2" height="5" rx="1" fill="#6a5a4a"/>
+        <circle cx="86" cy="433.5" r="1.5" fill="#5a4a3a"/>
+        <circle cx="86" cy="437.5" r="1.5" fill="#5a4a3a"/>
+        <polygon points="80,446 116,446 118,460 82,460" fill="#2c2c2c"/>
+        <rect x="80" y="446" width="36" height="5" fill="#2c2c2c"/>
+        
         {/* Столы */}
         {tables.map(table => {
           const pos = tablePositions[table.id];
