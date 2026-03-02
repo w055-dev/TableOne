@@ -10,10 +10,10 @@ const TableGroup = ({ table, type, cx, cy, x, labelX, labelY, isSelected, onClic
         onClick={onClick}
         style={{ cursor: status === 'booked' ? 'not-allowed' : 'pointer' }}
       >
-        <circle cx={cx - 22} cy={cy - 19} r="9" className="chair-circle"/>
-        <circle cx={cx + 22} cy={cy - 19} r="9" className="chair-circle"/>
-        <circle cx={cx - 22} cy={cy + 19} r="9" className="chair-circle"/>
-        <circle cx={cx + 22} cy={cy + 19} r="9" className="chair-circle"/>
+        <circle cx={cx } cy={cy - 19} r="9" className="chair-circle"/>
+        <circle cx={cx } cy={cy + 19} r="9" className="chair-circle"/>
+        <circle cx={cx - 22} cy={cy } r="9" className="chair-circle"/>
+        <circle cx={cx + 22} cy={cy} r="9" className="chair-circle"/>
         <circle cx={cx} cy={cy} r="22" className="table-base"/>
         <text x={cx} y={cy} className="table-label">{id}</text>
       </g>
