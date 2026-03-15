@@ -13,6 +13,14 @@ const MenuPage = ({
       sum + menuItems[parseInt(idx)].price * qty, 0
     );
   };
+  // Группировка блюд по категориям
+  const groupedItems = menuItems.reduce((acc, item, idx) => {
+    if (!acc[item.category]) {
+      acc[item.category] = [];
+    }
+    acc[item.category].push({ ...item, originalIndex: idx });
+    return acc;
+  }, {});
 
   return (
     <div id="page-menu" className="page active">
@@ -35,30 +43,35 @@ const MenuPage = ({
           </div>
         )}
 
-        <div className="menu-columns">
-          {[0, 1].map(col => (
-            <div key={col} className="menu-col">
-              {menuItems.slice(col * 10, (col + 1) * 10).map((item, idx) => {
-                const globalIdx = col * 10 + idx;
-                const qty = quantities[globalIdx] || 0;
-                return (
-                  <div key={globalIdx} className="menu-item">
-                    <span className="menu-item-name">{item.name}</span>
-                    <div className="menu-item-right">
-                      <span className="menu-price">{item.price} ₽</span>
-                      {qty === 0 ? (
-                        <button className="qty-btn" onClick={() => onQuantityChange(globalIdx, 1)}>+</button>
-                      ) : (
-                        <>
-                          <button className="qty-btn" onClick={() => onQuantityChange(globalIdx, -1)}>−</button>
-                          <span className="qty-num">{qty}</span>
-                          <button className="qty-btn" onClick={() => onQuantityChange(globalIdx, 1)}>+</button>
-                        </>
-                      )}
+        <div className="menu-categories">
+          {Object.entries(groupedItems).map(([category, items]) => (
+            <div key={category} className="menu-category">
+              <h2 className="menu-category-title">{category}</h2>
+              <div className="menu-items-grid">
+                {items.map(item => {
+                  const qty = quantities[item.originalIndex] || 0;
+                  return (
+                    <div key={item.id} className="menu-item-card">
+                      <div className="menu-item-info">
+                        <span className="menu-item-name">{item.name}</span>
+                        <span className="menu-item-weight">{item.weight}</span>
+                      </div>
+                      <div className="menu-item-right">
+                        <span className="menu-price">{item.price} ₽</span>
+                        {qty === 0 ? (
+                          <button className="qty-btn" onClick={() => onQuantityChange(item.originalIndex, 1)}>+</button>
+                        ) : (
+                          <>
+                            <button className="qty-btn" onClick={() => onQuantityChange(item.originalIndex, -1)}>−</button>
+                            <span className="qty-num">{qty}</span>
+                            <button className="qty-btn" onClick={() => onQuantityChange(item.originalIndex, 1)}>+</button>
+                          </>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                );
-              })}
+                  );
+                })}
+              </div>
             </div>
           ))}
         </div>
