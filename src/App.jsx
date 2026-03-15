@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import './styles/App.css';
 import { menuItems } from './data/menuItems';
 import { initialOrders } from './data/orders';
+import { initialTables } from './data/tables';
 import FloorPlan from './components/FloorPlan';
 import BookingSidebar from './components/BookingSidebar';
 import MenuPage from './components/MenuPage';
@@ -14,29 +15,9 @@ function App() {
   const [bookingInfo, setBookingInfo] = useState(null);
   const [quantities, setQuantities] = useState({});
   const [orders, setOrders] = useState(initialOrders);
+  const [tables, setTables] = useState(initialTables);
   const [adminAuth, setAdminAuth] = useState({ password: '', error: '' });
   const [showModal, setShowModal] = useState(false);
-
-  // Данные столиков
-  const tables = [
-    { id: 1, status: 'free', slots: [] },
-    { id: 2, status: 'partial', slots: ['с 10:00 до 11:00', 'с 11:00 до 14:00'] },
-    { id: 3, status: 'free', slots: [] },
-    { id: 4, status: 'booked', slots: ['с 09:00 до 23:00'] },
-    { id: 5, status: 'free', slots: [] },
-    { id: 6, status: 'free', slots: [] },
-    { id: 7, status: 'partial', slots: ['с 18:00 до 20:00'] },
-    { id: 8, status: 'free', slots: [] },
-    { id: 9, status: 'booked', slots: ['с 12:00 до 22:00'] },
-    { id: 10, status: 'free', slots: [] },
-    { id: 11, status: 'free', slots: [] },
-    { id: 12, status: 'partial', slots: ['с 19:00 до 21:00'] },
-    { id: 13, status: 'free', slots: [] },
-    { id: 14, status: 'free', slots: [] },
-    { id: 15, status: 'booked', slots: ['с 10:00 до 14:00', 'с 15:00 до 18:00'] },
-    { id: 16, status: 'free', slots: [] },
-    { id: 17, status: 'free', slots: [] },
-  ];
 
   const handleTableClick = (tableId) => {
     const table = tables.find(t => t.id === tableId);
@@ -45,6 +26,10 @@ function App() {
   };
 
   const handleBook = (timeSlot) => {
+    if (selectedTable.slots.includes(timeSlot)) {
+      alert('Это время уже забронировано!');
+      return;
+  }
     setBookingInfo({ tableId: selectedTable.id, timeSlot });
     setCurrentPage('menu');
   };
@@ -78,6 +63,19 @@ function App() {
       completed: false
     };
     
+    setTables(prevTables => prevTables.map(table => {
+      if (table.id === bookingInfo.tableId) {
+        const newSlots = [...table.slots, bookingInfo.timeSlot];
+        let newStatus = 'partial';
+        return {
+          ...table,
+          slots: newSlots,
+          status: newStatus
+        };
+      }
+      return table;
+    }));
+
     setOrders(prev => [...prev, newOrder]);
     setShowModal(false);
     setQuantities({});
