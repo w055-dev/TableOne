@@ -38,14 +38,14 @@ function App() {
       };
     };
     const newSlot = parseTimeSlot(timeSlot);
+    if (newSlot.end - newSlot.start < 30){
+      alert('Минимальное время бронирования 30 минут')
+      return false;
+    }
     const Overlap = selectedTable.slots.some(existingSlot=>{
       const existing = parseTimeSlot(existingSlot);
       return newSlot.start < existing.end && newSlot.end > existing.start;
     });
-    if (newSlot.start >= newSlot.end){
-      alert('Ошибка! Время начала должно быть меньше, чем время окончания брони');
-      return;
-    }
     if (Overlap) {
       alert('Это время уже забронировано!');
       return;
