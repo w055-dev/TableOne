@@ -42,6 +42,10 @@ function App() {
       const existing = parseTimeSlot(existingSlot);
       return newSlot.start < existing.end && newSlot.end > existing.start;
     });
+    if (newSlot.start >= newSlot.end){
+      alert('Ошибка! Время начала должно быть меньше, чем время окончания брони');
+      return;
+    }
     if (Overlap) {
       alert('Это время уже забронировано!');
       return;
