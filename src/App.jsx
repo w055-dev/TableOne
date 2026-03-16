@@ -21,12 +21,28 @@ function App() {
 
   const handleTableClick = (tableId) => {
     const table = tables.find(t => t.id === tableId);
-    if (table.status === 'booked') return;
-    setSelectedTable(table);
+    if (table.status !== 'booked'){
+      setSelectedTable(table);
+    }
   };
 
   const handleBook = (timeSlot) => {
-    if (selectedTable.slots.includes(timeSlot)) {
+    const parseTimeSlot = (slot) =>{
+      const cleanSlot = slot.replace('с ', '').replace(' до', '-');
+      const [start, end] = cleanSlot.split('-');
+      const [startHour, startMin] = start.split(':').map(Number);
+      const [endHour, endMin] = end.split(':').map(Number);
+      return {
+        start: startHour*60 + startMin,
+        end: endHour*60 + endMin
+      };
+    };
+    const newSlot = parseTimeSlot(timeSlot);
+    const Overlap = selectedTable.slots.some(existingSlot=>{
+      const existing = parseTimeSlot(existingSlot);
+      return newSlot.start < existing.end && newSlot.end > existing.start;
+    });
+    if (Overlap) {
       alert('Это время уже забронировано!');
       return;
   }
