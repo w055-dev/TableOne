@@ -1,250 +1,269 @@
+import axios from 'axios';
+
 const API_URL = 'http://localhost:3001/api';
 
 class ApiClient {
-    constructor() {
-        this.accessToken = localStorage.getItem('accessToken');
-        this.refreshTokenValue = localStorage.getItem('refreshToken');
-    }
+  constructor() {
+    this.accessToken = localStorage.getItem('accessToken');
+    this.refreshTokenValue = localStorage.getItem('refreshToken');
+    this.isRefreshing = false;
+    this.failedQueue = [];
 
-    setTokens(accessToken, refreshToken) {
-        this.accessToken = accessToken;
-        this.refreshTokenValue = refreshToken;
-        localStorage.setItem('accessToken', accessToken);
-        localStorage.setItem('refreshToken', refreshToken);
-    }
+    this.client = axios.create({
+      baseURL: API_URL,
+    });
 
-    clearTokens() {
-        this.accessToken = null;
-        this.refreshTokenValue = null;
-        localStorage.removeItem('accessToken');
-        localStorage.removeItem('refreshToken');
-    }
+    this._setupInterceptors();
+  }
 
-    async request(endpoint, options = {}) {
-        const headers = {
-            'Content-Type': 'application/json',
-            ...options.headers
-        };
-
+  _setupInterceptors() {
+    this.client.interceptors.request.use(
+      (config) => {
         if (this.accessToken) {
-            headers['Authorization'] = `Bearer ${this.accessToken}`;
+          config.headers.Authorization = `Bearer ${this.accessToken}`;
+        }
+        
+        if (config.data && config.method !== 'get' && config.method !== 'delete') {
+          config.headers['Content-Type'] = 'application/json';
         }
 
-        try {
-            let response = await fetch(`${API_URL}${endpoint}`, {
-                ...options,
-                headers
-            });
+        return config;
+      },
+      (error) => Promise.reject(error)
+    );
 
-            if (response.status === 403) {
-                const refreshed = await this.refreshToken();
-                if (refreshed) {
-                    headers['Authorization'] = `Bearer ${this.accessToken}`;
-                    response = await fetch(`${API_URL}${endpoint}`, {
-                        ...options,
-                        headers
-                    });
-                } else {
-                    this.clearTokens();
-                    window.location.href = '/login';
-                    throw new Error('Сессия истекла');
-                }
+    this.client.interceptors.response.use(
+      (response) => response,
+      async (error) => {
+        const originalRequest = error.config;
+        const isPublicEndpoint = originalRequest.url.includes('/menu') || 
+                                  originalRequest.url.includes('/auth/login') || 
+                                  originalRequest.url.includes('/auth/register');
+        if (error.response?.status === 401 && isPublicEndpoint) {
+          return Promise.reject(error);
+        }
+        if ((error.response?.status === 403 || error.response?.status === 401) && !originalRequest._retry && !isPublicEndpoint) {
+          originalRequest._retry = true;
+          if (!this.isRefreshing) {
+            this.isRefreshing = true;
+            try {
+              const refreshed = await this._refreshAccessToken();
+              this.isRefreshing = false;
+
+              if (refreshed) {
+                originalRequest.headers.Authorization = `Bearer ${this.accessToken}`;
+                return this.client(originalRequest);
+              } else {
+                this._handleAuthFailure();
+                return Promise.reject(error);
+              }
+            } catch (err) {
+              this.isRefreshing = false;
+              this._handleAuthFailure();
+              return Promise.reject(err);
             }
-
-            return response;
-        } catch (error) {
-            throw error;
+          }
         }
-    }
 
-    async refreshToken() {
-        if (!this.refreshTokenValue) return false;
-
-        try {
-            const response = await fetch(`${API_URL}/auth/refresh`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ refreshToken: this.refreshTokenValue })
-            });
-
-            if (response.ok) {
-                const data = await response.json();
-                this.setTokens(data.accessToken, data.refreshToken);
-                return true;
-            }
-        } catch (error) {
-            console.error('Refresh token error:', error);
+        if (error.response?.status === 401 && !isPublicEndpoint) {
+          this._handleAuthFailure();
         }
-        return false;
-    }
 
-    async login(email, password) {
-        const response = await fetch(`${API_URL}/auth/login`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email, password })
-        });
-        
-        if (response.ok) {
-            const data = await response.json();
-            this.setTokens(data.accessToken, data.refreshToken);
-            return data.user;
+        return Promise.reject(error);
+      }
+    );
+  }
+
+  async _refreshAccessToken() {
+    if (!this.refreshTokenValue) return false;
+
+    try {
+      const response = await axios.post(`${API_URL}/auth/refresh`, {
+        refreshToken: this.refreshTokenValue,
+      });
+
+      if (response.status === 200) {
+        this.setTokens(response.data.accessToken, response.data.refreshToken);
+        return true;
+      }
+    } catch (error) {
+      console.error('Refresh token error:', error.message);
+    }
+    return false;
+  }
+
+  _handleAuthFailure() {
+    const currentPath = window.location.pathname;
+    if (currentPath.includes('/login')) {
+      return;
+    }
+    this.clearTokens();
+    window.location.href = '/TableOne/login';
+  }
+
+  setTokens(accessToken, refreshToken) {
+    this.accessToken = accessToken;
+    this.refreshTokenValue = refreshToken;
+    localStorage.setItem('accessToken', accessToken);
+    localStorage.setItem('refreshToken', refreshToken);
+  }
+
+  clearTokens() {
+    this.accessToken = null;
+    this.refreshTokenValue = null;
+    localStorage.removeItem('accessToken');
+    localStorage.removeItem('refreshToken');
+  }
+
+  async _request(method, endpoint, data = null, config = {}) {
+    try {
+      const requestConfig = {
+        method,
+        url: endpoint,
+        ...config
+      };
+
+      if (data !== null && method !== 'DELETE') {
+        requestConfig.data = data;
+      }
+      
+      const response = await this.client(requestConfig);
+      return response.data;
+    } catch (error) {
+      throw this._formatError(error);
+    }
+  }
+
+  _formatError(error) {
+    if (error.response) {
+      let message = error.response.data?.message || error.response.statusText;
+        if (error.response.status === 409) {
+            message = error.response.data?.error || 'Пользователь с таким email уже существует';
         }
-        
-        const error = await response.json();
-        throw new Error(error.error || 'Ошибка входа');
-    }
-
-    async register(name, email, password) {
-        const response = await fetch(`${API_URL}/auth/register`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ name, email, password })
-        });
-        
-        if (response.ok) {
-            return await response.json();
+        if (error.response.status === 403) {
+            message = error.response.data?.error || 'Недостаточно прав для выполнения операции';
         }
-        
-        throw new Error('Ошибка регистрации');
+      return {
+        status: error.response.status,
+        message: error.response.data?.message || error.response.statusText,
+      };
+    } else if (error.request) {
+      return {
+        status: 0,
+        message: 'Нет ответа от сервера',
+      };
     }
+    return { status: 0, message: error.message };
+  }
 
-    async logout() {
-        try {
-            if (this.refreshTokenValue) {
-                await fetch(`${API_URL}/auth/logout`, {
-                    method: 'POST',
-                    headers: { 
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${this.accessToken}`
-                    },
-                    body: JSON.stringify({ refreshToken: this.refreshTokenValue })
-                });
-            }
-        } catch (error) {
-            console.error('Logout error:', error);
-        } finally {
-            this.clearTokens();
-        }
+  async login(email, password) {
+    try {
+      const data = await this._request('POST', '/auth/login', { email, password });
+      this.setTokens(data.accessToken, data.refreshToken);
+      return data.user;
+    } catch (error) {
+      throw error;
     }
+  }
 
-    async getMenu() {
-        const response = await fetch(`${API_URL}/menu`);
-        return response.json();
-    }
+  async register(name, email, password) {
+    return this._request('POST', '/auth/register', { name, email, password });
+  }
 
-    async getTables() {
-        const response = await this.request('/tables');
-        return response.json();
+  async logout() {
+    try {
+      await this._request('POST', '/auth/logout', { 
+        refreshToken: this.refreshTokenValue 
+      });
+    } finally {
+      this.clearTokens();
     }
+  }
 
-    async bookTable(tableId, timeSlot) {
-        const response = await this.request(`/tables/${tableId}/book`, {
-            method: 'POST',
-            body: JSON.stringify({ timeSlot })
-        });
-        return response.json();
-    }
+  async getMenu() {
+    return this._request('GET', '/menu');
+  }
 
-    async createOrder(tableId, timeSlot, dishes, clientName) {
-        const response = await this.request('/orders', {
-            method: 'POST',
-            body: JSON.stringify({ tableId, timeSlot, dishes, clientName })
-        });
-        return response.json();
+  async getTables() {
+    if (!this.accessToken) {
+      throw new Error('Not authenticated');
     }
+    return this._request('GET', '/tables');
+  }
 
-    async getOrders() {
-        const response = await this.request('/orders');
-        return response.json();
-    }
+  async createDish(dishData) {
+    return this._request('POST', '/menu', dishData);
+  }
 
-    async serveDish(orderId, dishIndex) {
-        const response = await this.request(`/orders/${orderId}/dish/${dishIndex}/serve`, {
-            method: 'PUT'
-        });
-        return response.json();
-    }
+  async updateDish(dishId, data) {
+    return this._request('PUT', `/menu/${dishId}`, data);
+  }
 
-    async getKitchenQueue() {
-        const response = await this.request('/kitchen/queue');
-        return response.json();
-    }
+  async deleteDish(dishId) {
+    return this._request('DELETE', `/menu/${dishId}`, null);
+  }
 
-    async getRecipe(dishId) {
-        const response = await this.request(`/kitchen/recipe/${dishId}`);
-        return response.json();
-    }
+  async bookTable(tableId, timeSlot) {
+    return this._request('POST', `/tables/${tableId}/book`, { timeSlot });
+  }
 
-    async getUsers() {
-        const response = await this.request('/users');
-        return response.json();
-    }
+  async getOrders() {
+    return this._request('GET', '/orders');
+  }
 
-    async createEmployee(name, email, password, role) {
-        const response = await this.request('/users/employee', {
-            method: 'POST',
-            body: JSON.stringify({ name, email, password, role })
-        });
-        return response.json();
-    }
+  async createOrder(tableId, timeSlot, dishes, clientName) {
+    return this._request('POST', '/orders', { 
+      tableId, 
+      timeSlot, 
+      dishes, 
+      clientName 
+    });
+  }
 
-    async updateUser(userId, data) {
-        const response = await this.request(`/users/${userId}`, {
-            method: 'PUT',
-            body: JSON.stringify(data)
-        });
-        return response.json();
-    }
+  async serveDish(orderId, dishIndex) {
+    return this._request('PUT', `/orders/${orderId}/dish/${dishIndex}/serve`);
+  }
 
-    async blockUser(userId) {
-        const response = await this.request(`/users/${userId}`, {
-            method: 'DELETE'
-        });
-        return response.json();
-    }
+  async getKitchenQueue() {
+    return this._request('GET', '/kitchen/queue');
+  }
 
-    async getAdminStats() {
-        const response = await this.request('/admin/stats');
-        return response.json();
-    }
+  async getRecipe(dishId) {
+    return this._request('GET', `/kitchen/recipe/${dishId}`);
+  }
 
-    async completeDish(queueId) {
-        const response = await this.request(`/kitchen/dish/${queueId}/complete`, {
-            method: 'PUT'
-        });
-        return response.json();
-    }
+  async startCooking(queueId) {
+    return this._request('PUT', `/kitchen/dish/${queueId}/start`);
+  }
 
-    async startCooking(queueId) {
-        const response = await this.request(`/kitchen/dish/${queueId}/start`, {
-            method: 'PUT'
-        });
-        return response.json();
-    }
+  async completeDish(queueId) {
+    return this._request('PUT', `/kitchen/dish/${queueId}/complete`);
+  }
 
-    async updateDish(dishId, data) {
-        const response = await this.request(`/menu/${dishId}`, {
-            method: 'PUT',
-            body: JSON.stringify(data)
-        });
-        return response.json();
-    }
+  async getUsers() {
+    return this._request('GET', '/users');
+  }
 
-    async createDish(dishData) {
-        const response = await this.request('/menu', {
-            method: 'POST',
-            body: JSON.stringify(dishData)
-        });
-        return response.json();
-    }
+  async createEmployee(name, email, password, role) {
+    return this._request('POST', '/users/employee', { 
+      name, 
+      email, 
+      password, 
+      role 
+    });
+  }
 
-    async deleteDish(dishId) {
-        const response = await this.request(`/menu/${dishId}`, {
-            method: 'DELETE'
-        });
-        return response.json();
-    }
+  async updateUser(userId, data) {
+    return this._request('PUT', `/users/${userId}`, data);
+  }
+
+  async blockUser(userId) {
+    return this._request('DELETE', `/users/${userId}`);
+  }
+
+  async getAdminStats() {
+    return this._request('GET', '/admin/stats');
+  }
 }
 
 export default new ApiClient();
