@@ -1,58 +1,205 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import './styles/App.css';
-import { menuItems } from './data/menuItems';
-import { initialOrders } from './data/orders';
-import { initialTables } from './data/tables';
-import FloorPlan from './components/FloorPlan';
-import BookingSidebar from './components/BookingSidebar';
-import MenuPage from './components/MenuPage';
-import AdminPanel from './components/AdminPanel';
+import Navigation from './components/Navigation';
+import HomePage from './pages/HomePage';
+import LoginPage from './pages/LoginPage';
+import TablesPage from './pages/TablesPage';
+import MenuPage from './pages/MenuPage';
+import MenuSheet from './components/MenuSheet';
 import Modal from './components/Modal';
+import AdminPanel from './components/AdminPanel';
+import apiClient from './api/client';
+import KitchenPanel from './components/KitchenPanel';
+import MenuRedactor from './pages/MenuRedactor';
+import UserRedactor from './pages/UserRedactor';
+
+const OrderPage = ({ bookingInfo, quantities, onQuantityChange, onPay, onBack, menuItems }) => {
+  return (
+    <div className="order-page">
+      <MenuSheet 
+        bookingInfo={bookingInfo}
+        quantities={quantities}
+        menuItems={menuItems}
+        onQuantityChange={onQuantityChange}
+        onPay={onPay}
+        onBack={onBack}
+      />
+    </div>
+  );
+};
 
 function App() {
-  const [currentPage, setCurrentPage] = useState('tables');
+  const [currentUser, setCurrentUser] = useState(null);
   const [selectedTable, setSelectedTable] = useState(null);
   const [bookingInfo, setBookingInfo] = useState(null);
   const [quantities, setQuantities] = useState({});
-  const [orders, setOrders] = useState(initialOrders);
-  const [tables, setTables] = useState(initialTables);
-  const [adminAuth, setAdminAuth] = useState({ password: '', error: '' });
+  const [orders, setOrders] = useState([]);
+  const [tables, setTables] = useState([]);
+  const [dishQueue, setDishQueue] = useState([]);
+  const [users, setUsers] = useState([]);
+  const [menuItems, setMenuItems] = useState([]);
+  const [adminError, setAdminError] = useState('');
   const [showModal, setShowModal] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  // Загрузка начальных данных
+  useEffect(() => {
+    const loadInitialData = async () => {
+      try {
+        // Проверяем сохраненного пользователя
+        const savedUser = localStorage.getItem('currentUser');
+        const userObj = savedUser ? JSON.parse(savedUser) : null;
+        
+        if (userObj) {
+          setCurrentUser(userObj);
+        }
+
+        // Загружаем меню
+        const menu = await apiClient.getMenu();
+        setMenuItems(menu);
+
+        // Загружаем столы
+        const tablesData = await apiClient.getTables();
+        setTables(tablesData);
+        
+        // Загружаем заказы (если пользователь админ или официант)
+        if (userObj && (userObj.role === 'admin' || userObj.role === 'waiter')) {
+          try {
+            const ordersData = await apiClient.getOrders();
+            setOrders(ordersData);
+          } catch (err) {
+            console.log('No orders access');
+          }
+        }
+        
+        // Загружаем очередь, если пользователь повар или админ
+        if (userObj && (userObj.role === 'chef' || userObj.role === 'admin')) {
+          try {
+            const queue = await apiClient.getKitchenQueue();
+            setDishQueue(queue);
+          } catch (err) {
+            console.log('No kitchen access');
+          }
+        }
+        
+        // Загружаем пользователей, если админ
+        if (userObj && userObj.role === 'admin') {
+          try {
+            const usersData = await apiClient.getUsers();
+            setUsers(usersData);
+          } catch (err) {
+            console.log('No users access');
+          }
+        }
+      } catch (error) {
+        console.error('Error loading data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadInitialData();
+  }, []);
+
+  const ProtectedRoute = ({ children, allowedRoles = [] }) => {
+    if (!currentUser) {
+      return <Navigate to="/login" replace />;
+    }
+    
+    if (allowedRoles.length > 0 && !allowedRoles.includes(currentUser.role)) {
+      return <Navigate to="/" replace />;
+    }
+    
+    return children;
+  };
+
+  const handleLogin = async (user) => {
+    setCurrentUser(user);
+    localStorage.setItem('currentUser', JSON.stringify(user));
+    try {
+      const ordersData = await apiClient.getOrders();
+      setOrders(ordersData);
+    } catch (err) {
+      // Игнор
+    }
+    if (user.role === 'chef' || user.role === 'admin') {
+      try {
+        const queue = await apiClient.getKitchenQueue();
+        setDishQueue(queue);
+      } catch (err) {
+        console.log('No kitchen access');
+      }
+    }
+    if (user.role === 'admin') {
+      try {
+        const usersData = await apiClient.getUsers();
+        setUsers(usersData);
+      } catch (err) {
+        console.log('No users access');
+      }
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      await apiClient.logout();
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
+    
+    setCurrentUser(null);
+    localStorage.removeItem('currentUser');
+    setSelectedTable(null);
+    setBookingInfo(null);
+    setQuantities({});
+    setOrders([]);
+    setDishQueue([]);
+    setUsers([]);
+  };
 
   const handleTableClick = (tableId) => {
     const table = tables.find(t => t.id === tableId);
-    if (table.status !== 'booked'){
+    if (table && table.status !== 'booked') {
       setSelectedTable(table);
     }
   };
 
-  const handleBook = (timeSlot) => {
-    const parseTimeSlot = (slot) =>{
-      const cleanSlot = slot.replace('с ', '').replace(' до', '-');
-      const [start, end] = cleanSlot.split('-');
-      const [startHour, startMin] = start.split(':').map(Number);
-      const [endHour, endMin] = end.split(':').map(Number);
-      return {
-        start: startHour*60 + startMin,
-        end: endHour*60 + endMin
-      };
-    };
-    const newSlot = parseTimeSlot(timeSlot);
-    if (newSlot.end - newSlot.start < 30){
-      alert('Минимальное время бронирования 30 минут')
-      return false;
+  const handleBook = async (timeSlot) => {
+    try {
+        const table = tables.find(t => t.id === selectedTable.id);
+        const parseTimeSlot = (slot) => {
+            const [start, end] = slot.split('-');
+            const [startHour, startMin] = start.split(':').map(Number);
+            const [endHour, endMin] = end.split(':').map(Number);
+            return {
+                start: startHour * 60 + (startMin || 0),
+                end: endHour * 60 + (endMin || 0)
+            };
+        };
+        
+        const newSlot = parseTimeSlot(timeSlot);
+        const Overlap = table.slots.some(existingSlot => {
+            const existing = parseTimeSlot(existingSlot);
+            return newSlot.start < existing.end && newSlot.end > existing.start;
+        });
+        
+        if (Overlap) {
+            alert('Это время уже забронировано!');
+            return false;
+        }
+        
+        if (newSlot.end - newSlot.start < 30) {
+            alert('Минимальное время бронирования 30 минут');
+            return false;
+        }
+        setBookingInfo({ tableId: selectedTable.id, timeSlot });
+        return true;
+    } catch (error) {
+        alert(error.message || 'Ошибка проверки времени');
+        return false;
     }
-    const Overlap = selectedTable.slots.some(existingSlot=>{
-      const existing = parseTimeSlot(existingSlot);
-      return newSlot.start < existing.end && newSlot.end > existing.start;
-    });
-    if (Overlap) {
-      alert('Это время уже забронировано!');
-      return;
-  }
-    setBookingInfo({ tableId: selectedTable.id, timeSlot });
-    setCurrentPage('menu');
-  };
+};
 
   const handleQuantityChange = (itemIndex, delta) => {
     setQuantities(prev => {
@@ -66,121 +213,281 @@ function App() {
   };
 
   const handlePay = () => {
-    setShowModal(true);
-  };
-
-  const handleConfirmOrder = () => {
-    const newOrder = {
-      id: `ord-${Date.now()}`,
-      tableId: bookingInfo.tableId,
-      timeSlot: bookingInfo.timeSlot,
-      sortMinutes: parseInt(bookingInfo.timeSlot.split(':')[0]) * 60,
-      dishes: Object.entries(quantities).map(([idx, qty]) => ({
-        name: menuItems[parseInt(idx)].name,
-        total: qty,
-        remaining: qty
-      })),
-      completed: false
-    };
-    
-    setTables(prevTables => prevTables.map(table => {
-      if (table.id === bookingInfo.tableId) {
-        const newSlots = [...table.slots, bookingInfo.timeSlot];
-        let newStatus = 'partial';
-        return {
-          ...table,
-          slots: newSlots,
-          status: newStatus
-        };
-      }
-      return table;
-    }));
-
-    setOrders(prev => [...prev, newOrder]);
-    setShowModal(false);
-    setQuantities({});
-    setCurrentPage('tables');
-    alert('Заказ подтверждён! Спасибо.');
-  };
-
-  const handleAdminLogin = (password) => {
-    if (password === '1') {
-      setAdminAuth({ password: '', error: '' });
-      setCurrentPage('admin');
-    } else {
-      setAdminAuth(prev => ({ ...prev, error: 'Неверный пароль' }));
+    if (Object.keys(quantities).length > 0) {
+      setShowModal(true);
     }
   };
 
-  const handleServed = (orderId, dishIdx) => {
-    setOrders(prev => prev.map(order => {
-      if (order.id !== orderId) return order;
-      
-      const newDishes = [...order.dishes];
-      if (newDishes[dishIdx].remaining > 0) {
-        newDishes[dishIdx].remaining--;
-      }
-      
-      const allServed = newDishes.every(d => d.remaining === 0);
-      
-      return {
-        ...order,
-        dishes: newDishes,
-        completed: allServed
-      };
-    }));
+  const handleConfirmOrder = async () => {
+    try {
+        await apiClient.bookTable(bookingInfo.tableId, bookingInfo.timeSlot);
+        const dishes = Object.entries(quantities).map(([idx, qty]) => ({
+            name: menuItems[parseInt(idx)].name,
+            quantity: qty,
+            dishId: menuItems[parseInt(idx)].id,
+            comment: ''
+        }));
+
+        await apiClient.createOrder(
+            bookingInfo.tableId,
+            bookingInfo.timeSlot,
+            dishes,
+            currentUser?.name
+        );
+
+        const updatedTables = await apiClient.getTables();
+        setTables(updatedTables);
+
+        const updatedOrders = await apiClient.getOrders();
+        setOrders(updatedOrders);
+        
+        if (currentUser?.role === 'chef' || currentUser?.role === 'admin') {
+            const queue = await apiClient.getKitchenQueue();
+            setDishQueue(queue);
+        }
+
+        setQuantities({});
+        setShowModal(false);
+        setBookingInfo(null);
+        setSelectedTable(null);
+        alert('Стол забронирован и заказ подтверждён! Спасибо.');
+    } catch (error) {
+        console.error('Error:', error);
+        alert(error.message || 'Ошибка при оформлении заказа');
+    }
+};
+
+  const handleCancelOrder = () => {
+    setShowModal(false);
   };
 
+  const handleBackToTables = () => {
+    setBookingInfo(null);
+    setQuantities({});
+  };
+
+  const handleServed = async (orderId, dishIdx) => {
+    try {
+      await apiClient.serveDish(orderId, dishIdx);
+      const updatedOrders = await apiClient.getOrders();
+      setOrders(updatedOrders);
+    } catch (error) {
+      console.error('Error serving dish:', error);
+    }
+  };
+
+  const loadDishQueue = async () => {
+    try {
+      const queue = await apiClient.getKitchenQueue();
+      setDishQueue(queue);
+    } catch (error) {
+      console.error('Error loading queue:', error);
+    }
+  };
+
+  const handleStartCooking = async (queueId) => {
+    try {
+      await apiClient.startCooking(queueId);
+      await loadDishQueue();
+      const updatedOrders = await apiClient.getOrders();
+      setOrders(updatedOrders);
+    } catch (error) {
+      console.error('Error starting cooking:', error);
+      alert('Ошибка при начале готовки');
+    }
+  };
+
+  const handleCompleteDish = async (queueId) => {
+    try {
+      await apiClient.completeDish(queueId);
+      await loadDishQueue();
+      const updatedOrders = await apiClient.getOrders();
+      setOrders(updatedOrders);
+    } catch (error) {
+      console.error('Error completing dish:', error);
+      alert('Ошибка при отметке блюда');
+    }
+  };
+
+  const handleViewRecipe = async (dishId) => {
+    try {
+      const recipe = await apiClient.getRecipe(dishId);
+      return recipe;
+    } catch (error) {
+      console.error('Error loading recipe:', error);
+      alert('Ошибка при загрузке рецепта');
+      return null;
+    }
+  };
+
+  const handleUpdateMenu = async (dishId, updatedData) => {
+    try {
+      await apiClient.updateDish(dishId, updatedData);
+      const updatedMenu = await apiClient.getMenu();
+      setMenuItems(updatedMenu);
+      alert('Меню обновлено');
+    } catch (error) {
+      console.error('Error updating menu:', error);
+      alert('Ошибка при обновлении меню');
+    }
+  };
+
+  const handleCreateDish = async (dishData) => {
+    try {
+      await apiClient.createDish(dishData);
+      const updatedMenu = await apiClient.getMenu();
+      setMenuItems(updatedMenu);
+      alert('Блюдо добавлено');
+    } catch (error) {
+      console.error('Error creating dish:', error);
+      alert('Ошибка при добавлении блюда');
+    }
+  };
+
+  const handleDeleteDish = async (dishId) => {
+    if (!window.confirm('Удалить блюдо?')) return;
+    try {
+      await apiClient.deleteDish(dishId);
+      const updatedMenu = await apiClient.getMenu();
+      setMenuItems(updatedMenu);
+      alert('Блюдо удалено');
+    } catch (error) {
+      console.error('Error deleting dish:', error);
+      alert('Ошибка при удалении блюда');
+    }
+  };
+
+  const handleUpdateUser = async (userId, data) => {
+    try {
+      await apiClient.updateUser(userId, data);
+      const updatedUsers = await apiClient.getUsers();
+      setUsers(updatedUsers);
+      alert('Пользователь обновлен');
+    } catch (error) {
+      console.error('Error updating user:', error);
+      alert('Ошибка при обновлении пользователя');
+    }
+  };
+
+  const handleBlockUser = async (userId) => {
+    if (!window.confirm('Заблокировать пользователя?')) return;
+    try {
+      await apiClient.blockUser(userId);
+      const updatedUsers = await apiClient.getUsers();
+      setUsers(updatedUsers);
+      alert('Пользователь заблокирован');
+    } catch (error) {
+      console.error('Error blocking user:', error);
+      alert('Ошибка при блокировке пользователя');
+    }
+  };
+
+  const handleCreateEmployee = async (name, email, password, role) => {
+    try {
+      await apiClient.createEmployee(name, email, password, role);
+      const updatedUsers = await apiClient.getUsers();
+      setUsers(updatedUsers);
+      alert('Сотрудник добавлен');
+    } catch (error) {
+      console.error('Error creating employee:', error);
+      alert('Ошибка при добавлении сотрудника');
+    }
+  };
+
+  if (loading) {
+    return <div className="loading">Загрузка...</div>;
+  }
+
   return (
-    <>
-      {currentPage === 'tables' && (
-        <div id="page-tables" className="page active">
-          <div className="page-header">
-            <h1>Выбор столика</h1>
-            <p>Нажмите на стол, чтобы забронировать</p>
-          </div>
-          <div className="tables-layout">
-            <FloorPlan 
-              tables={tables}
-              selectedTable={selectedTable}
-              onTableClick={handleTableClick}
+    <Router basename="/TableOne">
+      <Navigation 
+        isAuthenticated={!!currentUser}
+        user={currentUser}
+        onLogout={handleLogout}
+      />
+      
+      <Routes>
+        <Route path="/" element={<HomePage isAuthenticated={!!currentUser} />} />
+        <Route path="/menu" element={<MenuPage menuItems={menuItems} />} />
+        <Route path="/login" element={
+          currentUser ? <Navigate to="/" /> : <LoginPage onLogin={handleLogin} />
+        } />
+        <Route path="/booking" element={
+          <ProtectedRoute>
+            {bookingInfo ? (
+              <OrderPage 
+                bookingInfo={bookingInfo}
+                quantities={quantities}
+                menuItems={menuItems}
+                onQuantityChange={handleQuantityChange}
+                onPay={handlePay}
+                onBack={handleBackToTables}
+              />
+            ) : (
+              <TablesPage
+                  tables={tables}
+                  selectedTable={selectedTable}
+                  onTableClick={handleTableClick}
+                  onBook={handleBook}
+                  adminError={adminError}
+                />
+            )}
+          </ProtectedRoute>
+        } />
+        <Route path="/admin" element={
+          <ProtectedRoute allowedRoles={['admin', 'waiter']}>
+            <AdminPanel
+              orders={orders}
+              onServed={handleServed}
+              onBack={() => window.location.href = '/booking'}
             />
-            <BookingSidebar 
-              selectedTable={selectedTable}
-              onBook={handleBook}
-              onAdminLogin={handleAdminLogin}
-              adminError={adminAuth.error}
+          </ProtectedRoute>
+        } />
+        
+        <Route path="/kitchen" element={
+          <ProtectedRoute allowedRoles={['chef', 'admin']}>
+            <KitchenPanel
+              queue={dishQueue}
+              onStartCooking={handleStartCooking}
+              onComplete={handleCompleteDish}
+              onViewRecipe={handleViewRecipe}
+              onBack={() => window.location.href = '/'}
             />
-          </div>
-        </div>
-      )}
-
-      {currentPage === 'menu' && (
-        <MenuPage 
-          bookingInfo={bookingInfo}
-          quantities={quantities}
-          onQuantityChange={handleQuantityChange}
-          onPay={handlePay}
-          onBack={() => setCurrentPage('tables')}
-        />
-      )}
-
-      {currentPage === 'admin' && (
-        <AdminPanel 
-          orders={orders}
-          onServed={handleServed}
-          onBack={() => setCurrentPage('tables')}
-        />
-      )}
+          </ProtectedRoute>
+        } />
+        
+        <Route path="/admin/menu" element={
+          <ProtectedRoute allowedRoles={['admin']}>
+            <MenuRedactor
+              menuItems={menuItems}
+              onUpdateMenu={handleUpdateMenu}
+              onCreateDish={handleCreateDish}
+              onDeleteDish={handleDeleteDish}
+            />
+          </ProtectedRoute>
+        } />
+        
+        <Route path="/admin/users" element={
+          <ProtectedRoute allowedRoles={['admin']}>
+            <UserRedactor
+              users={users}
+              onUpdateUser={handleUpdateUser}
+              onBlockUser={handleBlockUser}
+              onCreateEmployee={handleCreateEmployee}
+            />
+          </ProtectedRoute>
+        } />
+      </Routes>
 
       <Modal 
         isOpen={showModal}
         bookingInfo={bookingInfo}
         quantities={quantities}
+        menuItems={menuItems}
         onConfirm={handleConfirmOrder}
-        onCancel={() => setShowModal(false)}
+        onCancel={handleCancelOrder}
       />
-    </>
+    </Router>
   );
 }
 

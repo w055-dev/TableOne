@@ -1,0 +1,24 @@
+const initialMenuItems = [
+    { id: 1, name: 'Samosa', price: 250, category: 'Закуски', weight: '150г', description: 'Хрустящие треугольники с картофелем и горошком', image: '/images/samosa.webp', recipe: 'Смешайте картофель, горошек и специи. Заверните в тесто и обжарьте во фритюре.' },
+    { id: 2, name: 'Paneer Tikka', price: 450, category: 'Закуски', weight: '200г', description: 'Маринованный сыр панир, запеченный в тандуре', image: '/images/paneer-tikka.webp', recipe: 'Замаринуйте панир в йогурте со специями. Запекайте в тандуре 10-15 минут.' },
+    { id: 3, name: 'Aloo Tikki', price: 300, category: 'Закуски', weight: '180г', description: 'Картофельные котлеты с пряностями', image: '/images/aloo-tikki.webp', recipe: 'Сформируйте котлеты из картофеля со специями. Обжарьте до золотистой корочки.' },
+    { id: 4, name: 'Papadam', price: 150, category: 'Закуски', weight: '50г', description: 'Хрустящие индийские лепешки', image: '/images/papadam.webp', recipe: 'Обжарьте лепешки в масле до хруста.' },
+    { id: 5, name: 'Chana Masala', price: 550, category: 'Основные блюда', weight: '300г', description: 'Нут в пряном томатном соусе', image: '/images/chana-masala.webp', recipe: 'Тушите нут с томатами и специями 20-30 минут.' },
+    { id: 6, name: 'Dal Tadka', price: 500, category: 'Основные блюда', weight: '280г', description: 'Чечевица с топленым маслом и специями', image: '/images/dal-tadka.webp', recipe: 'Варите чечевицу до мягкости. Добавьте зажарку из специй.' },
+    { id: 7, name: 'Palak Paneer', price: 600, category: 'Основные блюда', weight: '320г', description: 'Сыр панир в нежном соусе из шпината', image: '/images/palak-paneer.webp', recipe: 'Измельчите шпинат в пюре. Добавьте панир и специи.' },
+    { id: 8, name: 'Bhindi Masala', price: 520, category: 'Основные блюда', weight: '250г', description: 'Окра в пряном соусе', image: '/images/bhindi-masala.webp', recipe: 'Обжарьте окру со специями до хруста.' },
+    { id: 9, name: 'Aloo Gobi', price: 480, category: 'Основные блюда', weight: '270г', description: 'Картофель и цветная капуста с куркумой', image: '/images/aloo-gobi.webp', recipe: 'Тушите картофель и цветную капусту со специями.' },
+    { id: 10, name: 'Paneer Butter Masala', price: 650, category: 'Основные блюда', weight: '350г', description: 'Сыр панир в сливочном томатном соусе', image: '/images/paneer-butter-masala.webp', recipe: 'Приготовьте сливочно-томатный соус, добавьте панир.' },
+    { id: 11, name: 'Navratan Korma', price: 580, category: 'Основные блюда', weight: '300г', description: 'Овощи в сливочном ореховом соусе', image: '/images/navratan-korma.webp', recipe: 'Тушите овощи в сливочно-ореховом соусе.' },
+    { id: 12, name: 'Malai Kofta', price: 620, category: 'Основные блюда', weight: '320г', description: 'Картофельно-сырные шарики в сливочном соусе', image: '/images/malai-kofta.webp', recipe: 'Сформируйте шарики из картофеля и сыра. Подавайте с соусом.' },
+    { id: 13, name: 'Vegetable Biryani', price: 550, category: 'Рис', weight: '400г', description: 'Ароматный рис с овощами и специями', image: '/images/vegetable-biryani.webp', recipe: 'Слоями выложите рис и овощи со специями. Томите на медленном огне.' },
+    { id: 14, name: 'Raita', price: 200, category: 'Соусы', weight: '100г', description: 'Йогуртовый соус с огурцом и мятой', image: '/images/raita.webp', recipe: 'Смешайте йогурт с натертым огурцом и мятой.' },
+    { id: 15, name: 'Basmati Rice', price: 250, category: 'Рис', weight: '200г', description: 'Рассыпчатый рис басмати', image: '/images/basmati-rice.webp', recipe: 'Промойте рис. Варите в подсоленной воде до готовности.' },
+    { id: 16, name: 'Naan', price: 180, category: 'Хлеб', weight: '80г', description: 'Традиционная индийская лепешка', image: '/images/naan.webp', recipe: 'Раскатайте тесто. Выпекайте в тандуре или на сковороде.' },
+    { id: 17, name: 'Garlic Naan', price: 220, category: 'Хлеб', weight: '90г', description: 'Лепешка наан с чесноком', image: '/images/garlic-naan.webp', recipe: 'Посыпьте наан измельченным чесноком перед выпечкой.' },
+    { id: 18, name: 'Roti', price: 150, category: 'Хлеб', weight: '70г', description: 'Цельнозерновая лепешка', image: '/images/roti.webp', recipe: 'Раскатайте тесто из цельнозерновой муки. Обжарьте на сухой сковороде.' },
+    { id: 19, name: 'Gulab Jamun', price: 280, category: 'Десерты', weight: '150г', description: 'Сливочные шарики в сахарном сиропе', image: '/images/gulab-jamun.webp', recipe: 'Сформируйте шарики из сухого молока. Обжарьте и залейте сиропом.' },
+    { id: 20, name: 'Rasmalai', price: 300, category: 'Десерты', weight: '160г', description: 'Творожные шарики в молочном сиропе', image: '/images/rasmalai.webp', recipe: 'Сформируйте шарики из творога. Варите в молочном сиропе.' }
+];
+
+module.exports = { initialMenuItems };

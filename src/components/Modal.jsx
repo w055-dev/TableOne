@@ -1,12 +1,11 @@
 import React from 'react';
-import { menuItems } from '../data/menuItems';
 
-const Modal = ({ isOpen, bookingInfo, quantities, onConfirm, onCancel }) => {
+const Modal = ({ isOpen, bookingInfo, quantities, menuItems = [], onConfirm, onCancel }) => {
   if (!isOpen) return null;
 
   const calculateTotal = () => {
     return Object.entries(quantities).reduce((sum, [idx, qty]) => 
-      sum + menuItems[parseInt(idx)].price * qty, 0
+      sum + menuItems[parseInt(idx)]?.price * qty || 0, 0
     );
   };
 
@@ -27,6 +26,7 @@ const Modal = ({ isOpen, bookingInfo, quantities, onConfirm, onCancel }) => {
         <div className="modal-section">
           {Object.entries(quantities).map(([idx, qty]) => {
             const item = menuItems[parseInt(idx)];
+            if (!item) return null;
             return (
               <div key={idx} className="modal-row">
                 <span>{item.name} × {qty}</span>
