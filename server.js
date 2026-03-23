@@ -24,8 +24,8 @@ const ROLES = {
     ADMIN: 'admin'
 };
 
-const JWT_SECRET = "restaurant_access_secret_key_2024";
-const REFRESH_SECRET = "restaurant_refresh_secret_key_2024";
+const JWT_SECRET = "TableOne_access_secret_key";
+const REFRESH_SECRET = "Table_refresh_secret_key";
 const ACCESS_EXPIRES_IN = "15m";
 const REFRESH_EXPIRES_IN = "7d";
 
@@ -164,8 +164,6 @@ function authorize(...allowedRoles) {
         next();
     };
 }
-
-// ==================== Аутентификация ====================
 
 app.post('/api/auth/register', async (req, res) => {
     const { name, email, password } = req.body;
@@ -369,7 +367,8 @@ app.get('/api/menu', (req, res) => {
 });
 
 app.get('/api/menu/:id', (req, res) => {
-    const item = menuItems.find(i => i.id == req.params.id);
+    const id = parseInt(req.params.id)
+    const item = menuItems.find(i => i.id == id);
     if (!item) {
         return res.status(404).json({ error: 'Блюдо не найдено' });
     }
@@ -386,8 +385,8 @@ app.get('/api/menu/:id', (req, res) => {
 app.post('/api/menu', authenticateToken, authorize(ROLES.ADMIN), (req, res) => {
     const { name, price, category, weight, description, image, recipe } = req.body;
     
-    if (!name || !price || !category) {
-        return res.status(400).json({ error: "Название, цена и категория обязательны" });
+    if (!name || !price || !category || weight) {
+        return res.status(400).json({ error: "Название, цена, категория и вес блюда обязательны" });
     }
     
     const newItem = {
@@ -406,29 +405,36 @@ app.post('/api/menu', authenticateToken, authorize(ROLES.ADMIN), (req, res) => {
 });
 
 app.put('/api/menu/:id', authenticateToken, authorize(ROLES.ADMIN), (req, res) => {
-    const itemIndex = menuItems.findIndex(i => i.id == req.params.id);
+    const id = parseInt(req.params.id)
+    const itemIndex = menuItems.findIndex(i => i.id == id);
     if (itemIndex === -1) {
         return res.status(404).json({ error: 'Блюдо не найдено' });
     }
-    
     menuItems[itemIndex] = {
         ...menuItems[itemIndex],
         ...req.body,
-        id: menuItems[itemIndex].id
+        id: menuItems[itemIndex].id,
+        price: req.body.price !== undefined ? Number(req.body.price) : menuItems[itemIndex].price
     };
-    
+
     res.json(menuItems[itemIndex]);
 });
 
 app.delete('/api/menu/:id', authenticateToken, authorize(ROLES.ADMIN), (req, res) => {
-    const initialLength = menuItems.length;
-    menuItems = menuItems.filter(i => i.id != req.params.id);
+    const id = parseInt(req.params.id)
+    const itemToDelete = menuItems.find(item => item.id === id);
     
-    if (menuItems.length < initialLength) {
-        res.json({ message: 'Блюдо удалено' });
-    } else {
-        res.status(404).json({ error: 'Блюдо не найдено' });
+    if (!itemToDelete) {
+        return res.status(404).json({ error: 'Блюдо не найдено' });
     }
+    
+    menuItems = menuItems.filter(item => item.id !== id);
+    
+    res.json({ 
+        message: 'Блюдо удалено', 
+        deletedItem: itemToDelete,
+        remainingCount: menuItems.length
+    });
 });
 
 app.get('/api/tables', authenticateToken, (req, res) => {
@@ -549,7 +555,7 @@ app.post('/api/orders', authenticateToken, authorize(ROLES.CLIENT, ROLES.WAITER,
     res.status(201).json(newOrder);
 });
 
-app.get('/api/orders', authenticateToken, authorize(ROLES.ADMIN, ROLES.WAITER), (req, res) => {
+app.get('/api/orders', authenticateToken, authorize(ROLES.CLIENT,ROLES.ADMIN, ROLES.WAITER), (req, res) => {
     res.json(orders);
 });
 
@@ -633,7 +639,11 @@ app.put('/api/kitchen/dish/:queueId/complete', authenticateToken, authorize(ROLE
     if (!dish) {
         return res.status(404).json({ error: "Блюдо не найдено" });
     }
-
+    
+    if (dish.status !== 'cooking') {
+        return res.status(400).json({ error: "Блюдо не начали готовить" });
+    }
+    
     dish.status = 'ready';
     updateDishQueue();
     
