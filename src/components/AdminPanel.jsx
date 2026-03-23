@@ -9,6 +9,20 @@ const AdminPanel = ({ orders, onServed, onBack }) => {
     return [...active, ...completed];
   };
 
+  const getDishStatusText = (dish) => {
+    if (dish.remaining === 0) return 'Подано';
+    if (dish.status === 'ready') return 'Готово';
+    if (dish.status === 'cooking') return 'Готовится';
+    return 'Ожидает приготовления';
+  };
+
+  const getDishStatusClass = (dish) => {
+    if (dish.remaining === 0) return 'served';
+    if (dish.status === 'ready') return 'ready-to-serve';
+    if (dish.status === 'cooking') return 'cooking';
+    return 'pending';
+  };
+
   const isReadyToServe = (dish) => {
     return dish.status === 'ready' && dish.remaining > 0;
   };
@@ -37,21 +51,21 @@ const AdminPanel = ({ orders, onServed, onBack }) => {
                 {order.dishes.map((dish, di) => {
                   const isReady = isReadyToServe(dish);
                   const isServed = dish.remaining === 0;
+                  const statusClass = getDishStatusClass(dish);
+                  const statusText = getDishStatusText(dish);
                   
                   return (
-                    <div key={di} className={`dish-row ${isServed ? 'served' : ''} ${isReady ? 'ready-to-serve' : ''}`}>
+                    <div key={di} className={`dish-row ${statusClass}`}>
                       <span className="dish-name-qty">{dish.name} × {dish.total}</span>
                       <span className="dish-status-badge">
-                        {isServed ? '✓ Подано' : 
-                         isReady ? '✓✓ Готов к подаче' : 
-                         dish.status === 'cooking' ? ' Готовится' : ' Ожидает'}
+                        {statusText}
                       </span>
                       <button 
                         className={`btn-served ${isReady ? 'active' : ''}`} 
                         disabled={!isReady}
                         onClick={() => onServed(order.id, di)}
                       >
-                        Подано
+                        Подать
                       </button>
                     </div>
                   );
