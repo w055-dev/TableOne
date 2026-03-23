@@ -37,6 +37,9 @@ const MenuRedactor = ({ menuItems, onUpdateMenu, onCreateDish, onDeleteDish }) =
       alert('Заполните название и цену');
     }
   };
+  const handleDelete = (itemId) => {
+    onDeleteDish(itemId);
+  }
 
   return (
     <div className="menu-redactor">
@@ -133,7 +136,7 @@ const MenuRedactor = ({ menuItems, onUpdateMenu, onCreateDish, onDeleteDish }) =
                   <p>Вес: {item.weight}</p>
                   <div className="dish-actions">
                     <button onClick={() => handleEdit(item)}>Редактировать</button>
-                    <button onClick={() => onDeleteDish(item.id)}>Удалить</button>
+                    <button onClick={() => handleDelete(item.id)}>Удалить</button>
                   </div>
                 </>
               )}

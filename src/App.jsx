@@ -5,6 +5,7 @@ import Navigation from './components/Navigation';
 import HomePage from './pages/HomePage';
 import LoginPage from './pages/LoginPage';
 import TablesPage from './pages/TablesPage';
+import OrderPage from './pages/OrderPage';
 import MenuPage from './pages/MenuPage';
 import MenuSheet from './components/MenuSheet';
 import Modal from './components/Modal';
@@ -13,21 +14,6 @@ import apiClient from './api/client';
 import KitchenPanel from './components/KitchenPanel';
 import MenuRedactor from './pages/MenuRedactor';
 import UserRedactor from './pages/UserRedactor';
-
-const OrderPage = ({ bookingInfo, quantities, onQuantityChange, onPay, onBack, menuItems }) => {
-  return (
-    <div className="order-page">
-      <MenuSheet 
-        bookingInfo={bookingInfo}
-        quantities={quantities}
-        menuItems={menuItems}
-        onQuantityChange={onQuantityChange}
-        onPay={onPay}
-        onBack={onBack}
-      />
-    </div>
-  );
-};
 
 function App() {
   const [currentUser, setCurrentUser] = useState(null);
@@ -47,49 +33,46 @@ function App() {
   useEffect(() => {
     const loadInitialData = async () => {
       try {
-        // Проверяем сохраненного пользователя
+        const menu = await apiClient.getMenu();
+        setMenuItems(menu);
         const savedUser = localStorage.getItem('currentUser');
         const userObj = savedUser ? JSON.parse(savedUser) : null;
         
         if (userObj) {
           setCurrentUser(userObj);
-        }
-
-        // Загружаем меню
-        const menu = await apiClient.getMenu();
-        setMenuItems(menu);
-
-        // Загружаем столы
-        const tablesData = await apiClient.getTables();
-        setTables(tablesData);
-        
-        // Загружаем заказы (если пользователь админ или официант)
-        if (userObj && (userObj.role === 'admin' || userObj.role === 'waiter')) {
+          
           try {
-            const ordersData = await apiClient.getOrders();
-            setOrders(ordersData);
+            const tablesData = await apiClient.getTables();
+            setTables(tablesData);
           } catch (err) {
-            console.log('No orders access');
+            console.log('No tables access');
           }
-        }
-        
-        // Загружаем очередь, если пользователь повар или админ
-        if (userObj && (userObj.role === 'chef' || userObj.role === 'admin')) {
-          try {
-            const queue = await apiClient.getKitchenQueue();
-            setDishQueue(queue);
-          } catch (err) {
-            console.log('No kitchen access');
+          
+          if (userObj.role === 'admin' || userObj.role === 'waiter') {
+            try {
+              const ordersData = await apiClient.getOrders();
+              setOrders(ordersData);
+            } catch (err) {
+              console.log('No orders access');
+            }
           }
-        }
-        
-        // Загружаем пользователей, если админ
-        if (userObj && userObj.role === 'admin') {
-          try {
-            const usersData = await apiClient.getUsers();
-            setUsers(usersData);
-          } catch (err) {
-            console.log('No users access');
+
+          if (userObj.role === 'chef' || userObj.role === 'admin') {
+            try {
+              const queue = await apiClient.getKitchenQueue();
+              setDishQueue(queue);
+            } catch (err) {
+              console.log('No kitchen access');
+            }
+          }
+          
+          if (userObj.role === 'admin') {
+            try {
+              const usersData = await apiClient.getUsers();
+              setUsers(usersData);
+            } catch (err) {
+              console.log('No users access');
+            }
           }
         }
       } catch (error) {
@@ -117,11 +100,21 @@ function App() {
   const handleLogin = async (user) => {
     setCurrentUser(user);
     localStorage.setItem('currentUser', JSON.stringify(user));
+
     try {
-      const ordersData = await apiClient.getOrders();
-      setOrders(ordersData);
+      const tablesData = await apiClient.getTables();
+      setTables(tablesData);
     } catch (err) {
-      // Игнор
+      console.log('No tables access');
+    }
+    
+    if (user.role === 'admin' || user.role === 'waiter') {
+      try {
+        const ordersData = await apiClient.getOrders();
+        setOrders(ordersData);
+      } catch (err) {
+        console.log('No orders access');
+      }
     }
     if (user.role === 'chef' || user.role === 'admin') {
       try {
@@ -156,6 +149,7 @@ function App() {
     setOrders([]);
     setDishQueue([]);
     setUsers([]);
+    setTables([]);
   };
 
   const handleTableClick = (tableId) => {
