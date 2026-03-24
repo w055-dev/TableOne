@@ -606,17 +606,22 @@ app.get('/api/kitchen/queue', authenticateToken, authorize(ROLES.CHEF, ROLES.ADM
 
 app.put('/api/kitchen/dish/:queueId/start', authenticateToken, authorize(ROLES.CHEF, ROLES.ADMIN), (req, res) => {
     const { queueId } = req.params;
-    
-    const [orderId, dishIndex] = queueId.split('-');
+    const lastDashIndex = queueId.lastIndexOf('-');
+    const orderId = queueId.substring(0, lastDashIndex);
+    const dishIndex = parseInt(queueId.substring(lastDashIndex + 1));       
     const order = orders.find(o => o.id === orderId);
-    
+
     if (!order) {
         return res.status(404).json({ error: "Заказ не найден" });
     }
     
-    const dish = order.dishes[parseInt(dishIndex)];
+    const dish = order.dishes[dishIndex];
     if (!dish) {
         return res.status(404).json({ error: "Блюдо не найдено" });
+    }
+    
+    if (dish.status !== 'pending') {
+        return res.status(400).json({ error: `Блюдо уже ${dish.status === 'cooking' ? 'готовится' : 'готово'}` });
     }
     
     dish.status = 'cooking';
@@ -627,15 +632,16 @@ app.put('/api/kitchen/dish/:queueId/start', authenticateToken, authorize(ROLES.C
 
 app.put('/api/kitchen/dish/:queueId/complete', authenticateToken, authorize(ROLES.CHEF, ROLES.ADMIN), (req, res) => {
     const { queueId } = req.params;
-    
-    const [orderId, dishIndex] = queueId.split('-');
+    const lastDashIndex = queueId.lastIndexOf('-');
+    const orderId = queueId.substring(0, lastDashIndex);
+    const dishIndex = parseInt(queueId.substring(lastDashIndex + 1));
     const order = orders.find(o => o.id === orderId);
     
     if (!order) {
         return res.status(404).json({ error: "Заказ не найден" });
     }
     
-    const dish = order.dishes[parseInt(dishIndex)];
+    const dish = order.dishes[dishIndex];
     if (!dish) {
         return res.status(404).json({ error: "Блюдо не найдено" });
     }
