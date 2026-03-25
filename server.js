@@ -165,22 +165,53 @@ function authorize(...allowedRoles) {
     };
 }
 
+function validateEmail(email){
+    const emailRegex= /^[^\s@]+@([^\s@]+\.)+[^\s@]+$/;
+    if (!email){
+        return  "Email обязателен";
+    }
+    if (!emailRegex.test(email)){
+        return "Некорректный email ";
+    }
+    return null;
+}
+
+function validatePassword(password){
+    if (!password){
+        return "Пароль обязателен";
+    }
+    if (password.length < 6){
+        return "Пароль должен состоять минимум из 6 символов";
+    }
+    return null;
+}
+
 app.post('/api/auth/register', async (req, res) => {
     const { name, email, password } = req.body;
+    const emailError = validateEmail(email);
+    const passwordError = validatePassword(password);
     
     if (!name || !email || !password) {
         return res.status(400).json({ error: "Имя, email и пароль обязательны" });
     }
-    
+
+    if (emailError){
+        return res.status(400).json({error: emailError});
+    }
+
+    if (passwordError){
+        return res.status(400).json({error: passwordError});
+    }
+
     const existingUser = users.find(u => u.email === email);
     if (existingUser) {
         return res.status(409).json({ error: "Пользователь с таким email уже существует" });
     }
-    
+
     const newUser = {
         id: nanoid(),
         name,
-        email,
+        email: email.toLowerCase().trim(), //Добавил нормализцацию, чтобы избежать возможных ошибок
         password: await hashPassword(password),
         role: ROLES.CLIENT,
         isBlocked: false,
@@ -210,7 +241,7 @@ app.post('/api/auth/login', async (req, res) => {
     if (user.isBlocked) {
         return res.status(401).json({ error: "Пользователь заблокирован" });
     }
-    
+
     const isPasswordValid = await verifyPassword(password, user.password);
     
     if (isPasswordValid) {
@@ -330,6 +361,16 @@ app.delete('/api/users/:id', authenticateToken, authorize(ROLES.ADMIN), (req, re
 
 app.post('/api/users/employee', authenticateToken, authorize(ROLES.ADMIN), async (req, res) => {
     const { name, email, password, role } = req.body;
+    const emailError = validateEmail(email);
+    const passwordError = validatePassword(password);
+
+    if (emailError){
+        return res.status(400).json({error: emailError});
+    }
+
+    if (passwordError){
+        return res.status(400).json({error: passwordError})
+    }
     
     if (!name || !email || !password || !role) {
         return res.status(400).json({ error: "Все поля обязательны" });
@@ -347,7 +388,7 @@ app.post('/api/users/employee', authenticateToken, authorize(ROLES.ADMIN), async
     const newUser = {
         id: nanoid(),
         name,
-        email,
+        email: email.toLowerCase().trim(), //Добавил нормализцацию, чтобы избежать возможных ошибок
         password: await hashPassword(password),
         role,
         isBlocked: false,
