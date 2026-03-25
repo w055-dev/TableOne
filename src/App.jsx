@@ -433,7 +433,7 @@ function App() {
             <AdminPanel
               orders={orders}
               onServed={handleServed}
-              onBack={() => window.location.href = '/booking'}
+              onBack={() => window.location.href = '/'}
             />
           </ProtectedRoute>
         } />
