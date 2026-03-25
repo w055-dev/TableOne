@@ -385,7 +385,7 @@ app.get('/api/menu/:id', (req, res) => {
 app.post('/api/menu', authenticateToken, authorize(ROLES.ADMIN), (req, res) => {
     const { name, price, category, weight, description, image, recipe } = req.body;
     
-    if (!name || !price || !category || weight) {
+    if (!name || !price || !category || !weight) {
         return res.status(400).json({ error: "Название, цена, категория и вес блюда обязательны" });
     }
     

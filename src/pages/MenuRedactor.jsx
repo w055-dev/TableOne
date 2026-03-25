@@ -23,7 +23,7 @@ const MenuRedactor = ({ menuItems, onUpdateMenu, onCreateDish, onDeleteDish }) =
   };
 
   const handleCreate = () => {
-    if (newDish.name && newDish.price) {
+    if (newDish.name && newDish.price &&newDish.weight) {
       onCreateDish(newDish);
       setNewDish({
         name: '',
@@ -34,7 +34,7 @@ const MenuRedactor = ({ menuItems, onUpdateMenu, onCreateDish, onDeleteDish }) =
         recipe: ''
       });
     } else {
-      alert('Заполните название и цену');
+      alert('Заполните название,цену и вес блюда');
     }
   };
   const handleDelete = (itemId) => {
