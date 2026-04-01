@@ -6,6 +6,16 @@ export default defineConfig({
   base: '/TableOne/',
   server: {
     port: 3000,
-    open: true
+    open: true,
+    proxy:{
+      '/images':{
+        target: 'http://localhost:3001',
+        changeOrigin: true
+      },
+      '/api':{
+        target: 'http://localhost:3001',
+        changeOrigin: true
+      }
+    }
   }
 })
