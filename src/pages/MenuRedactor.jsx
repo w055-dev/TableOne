@@ -69,10 +69,10 @@ const MenuRedactor = ({ menuItems, onUpdateMenu, onCreateDish, onDeleteDish }) =
             onChange={(e) => setNewDish({...newDish, category: e.target.value})}
           >
             <option>Закуски</option>
-            <option>Основные блюда</option>
-            <option>Рис</option>
-            <option>Хлеб</option>
-            <option>Соусы</option>
+            <option>Пицца</option>
+            <option>Паста</option>
+            <option>Ризотто</option>
+            <option>Напитки</option>
             <option>Десерты</option>
           </select>
           <input
@@ -117,10 +117,10 @@ const MenuRedactor = ({ menuItems, onUpdateMenu, onCreateDish, onDeleteDish }) =
                     onChange={(e) => setEditingItem({...editingItem, category: e.target.value})}
                   >
                     <option>Закуски</option>
-                    <option>Основные блюда</option>
-                    <option>Рис</option>
-                    <option>Хлеб</option>
-                    <option>Соусы</option>
+                    <option>Пицца</option>
+                    <option>Паста</option>
+                    <option>Ризотто</option>
+                    <option>Напитки</option>
                     <option>Десерты</option>
                   </select>
                   <div className="edit-actions">

@@ -58,7 +58,7 @@ const MenuSheet = ({
                       <div className="menu-item-info">
                         <span className="menu-item-name">{item.name}</span>
                         <p className="menu-item-description">
-                          {item.description || 'Традиционное индийское блюдо'}
+                          {item.description || 'Традиционное итальянское блюдо'}
                         </p>
                         <span className="menu-item-weight">{item.weight}</span>
                       </div>

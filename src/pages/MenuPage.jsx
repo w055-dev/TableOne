@@ -44,7 +44,7 @@ const MenuPage = ({ menuItems = [] }) => {
                     <div className="menu-item-info">
                       <h3 className="menu-item-name">{item.name}</h3>
                       <p className="menu-item-description">
-                        {item.description || 'Традиционное индийское блюдо, приготовленное по особому рецепту'}
+                        {item.description || 'Традиционное итальянское блюдо, приготовленное по особому рецепту'}
                       </p>
                       <div className="menu-item-meta">
                         <span className="menu-item-weight">{item.weight}</span>
