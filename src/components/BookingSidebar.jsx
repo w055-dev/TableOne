@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
 
-const BookingSidebar = ({ selectedTable, onBook, onAdminLogin, adminError }) => {
+const BookingSidebar = ({ selectedTable, onBook, adminError }) => {
   const [timeSlot, setTimeSlot] = useState('15:00-17:00');
-  const [adminPassword, setAdminPassword] = useState('');
 
   const handleTimeChange = (e) => {
     let digits = e.target.value.replace(/\D/g, '');
@@ -61,27 +60,6 @@ const BookingSidebar = ({ selectedTable, onBook, onAdminLogin, adminError }) => 
             <span>{item.label}</span>
           </div>
         ))}
-      </div>
-
-      <div className="admin-login-card">
-        <input 
-          type="password" 
-          className="time-input" 
-          placeholder="Пароль"
-          value={adminPassword}
-          onChange={(e) => setAdminPassword(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && onAdminLogin(adminPassword)}
-          style={{ marginBottom: '0.5rem' }}
-        />
-        <button 
-          className="btn" 
-          onClick={() => onAdminLogin(adminPassword)}
-        >
-          Войти как администратор
-        </button>
-        {adminError && (
-          <div className="admin-pw-error">{adminError}</div>
-        )}
       </div>
 
       {selectedTable && (
