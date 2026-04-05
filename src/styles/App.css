@@ -690,7 +690,7 @@
 }
 
 .hero-section {
-  background: linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.6)), url('https://images.unsplash.com/photo-1517248135467-4c7edcad34c4');
+  background: linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.6)), url('/images/restaurant.jpg');
   background-size: cover;
   background-position: center;
   height: 500px;
@@ -1068,6 +1068,34 @@
   background: white;
 }
 
+.dish-card h3 {
+  font-size: 1.1rem;
+  margin-bottom: 0.5rem;
+  font-family: 'Cormorant Garamond', serif;
+}
+
+.dish-price {
+  font-size: 1.2rem;
+  font-weight: bold;
+  color: var(--yellow);
+  margin: 0.25rem 0;
+}
+
+.dish-category,
+.dish-weight,
+.dish-time {
+  font-size: 0.8rem;
+  color: var(--gray-mid);
+  margin: 0.2rem 0;
+}
+
+.dish-desc {
+  font-size: 0.75rem;
+  color: var(--gray-mid);
+  margin-top: 0.5rem;
+  line-height: 1.4;
+}
+
 .dish-actions, .edit-actions {
   display: flex;
   gap: 0.5rem;
@@ -1109,6 +1137,7 @@
 
 .btn-small {
   padding: 0.25rem 0.6rem;
+  color: var(--black);
   border: 1px solid var(--black);
   background: white;
   cursor: pointer;
@@ -1137,7 +1166,7 @@
 .active {
   color: var(--green);
 }
-/* Добавьте в App.css */
+
 .kitchen-actions {
   display: flex;
   gap: 0.5rem;
@@ -1246,7 +1275,6 @@
   box-shadow: 2px 2px 0 var(--black);
 }
 
-/* Стили для кухни */
 .kitchen-stats {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -1610,4 +1638,50 @@
   transform: translateY(-1px);
   box-shadow: 2px 2px 0 rgba(0,0,0,0.2);
   background: #999;
+}
+
+.edit-mode {
+  width: 100%;
+}
+
+.edit-mode h3 {
+  margin-bottom: 1rem;
+  color: var(--yellow);
+  border-bottom: 2px solid var(--yellow);
+  padding-bottom: 0.5rem;
+}
+
+.edit-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.edit-form input,
+.edit-form select,
+.edit-form textarea {
+  padding: 0.5rem;
+  border: 2px solid var(--black);
+  font-family: 'Jost', sans-serif;
+  font-size: 0.85rem;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.edit-form input:focus,
+.edit-form select:focus,
+.edit-form textarea:focus {
+  outline: none;
+  box-shadow: 2px 2px 0 var(--black);
+}
+
+.edit-form textarea {
+  min-height: 60px;
+  resize: vertical;
+}
+
+.edit-actions {
+  display: flex;
+  gap: 1rem;
+  margin-top: 0.5rem;
 }

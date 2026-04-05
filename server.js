@@ -111,7 +111,7 @@ function generateTokens(user) {
         REFRESH_SECRET,
         { expiresIn: REFRESH_EXPIRES_IN }
     );
-    
+    refreshTokens = refreshTokens.filter(rt => rt.userId !== user.id); // Удаление старых токенов пользователя
     refreshTokens.push({
         token: refreshToken,
         userId: user.id,

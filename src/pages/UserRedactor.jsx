@@ -124,26 +124,26 @@ const UserRedactor = ({ users, onUpdateUser, onBlockUser, onCreateEmployee }) =>
                   <td className="actions-cell">
                     {editingUser?.id === user.id ? (
                       <>
-                        <button className="btn-small" onClick={() => {
+                        <button className="btn btn-small" onClick={() => {
                           onUpdateUser(user.id, editingUser);
                           setEditingUser(null);
                         }}>Сохранить</button>
-                        <button className="btn-small" onClick={() => setEditingUser(null)}>Отмена</button>
+                        <button className="btn btn-small" onClick={() => setEditingUser(null)}>Отмена</button>
                       </>
                     ) : (
                       <>
                         {user.role !== 'admin' && (
-                          <button className="btn-small" onClick={() => setEditingUser(user)}>
+                          <button className="btn btn-small" onClick={() => setEditingUser(user)}>
                             Редактировать
                           </button>
                         )}
                         {!user.isBlocked && user.role !== 'admin' && (
-                          <button className="btn-small btn-danger" onClick={() => onBlockUser(user.id)}>
+                          <button className="btn btn-small btn-danger" onClick={() => onBlockUser(user.id)}>
                             Заблокировать
                           </button>
                         )}
                         {user.isBlocked && user.role !== 'admin' && (
-                          <button className="btn-small" onClick={() => handleUnblockUser(user.id)}>
+                          <button className="btn btn-small" onClick={() => handleUnblockUser(user.id)}>
                             Разблокировать
                           </button>
                         )}

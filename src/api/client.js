@@ -43,25 +43,37 @@ class ApiClient {
           return Promise.reject(error);
         }
         if ((error.response?.status === 403 || error.response?.status === 401) && !originalRequest._retry && !isPublicEndpoint) {
+          if (this.isRefreshing) {
+            return new Promise((resolve, reject) => {
+              this.failedQueue.push({ resolve, reject, config: originalRequest });
+            });
+          }
           originalRequest._retry = true;
-          if (!this.isRefreshing) {
-            this.isRefreshing = true;
-            try {
-              const refreshed = await this._refreshAccessToken();
-              this.isRefreshing = false;
+          this.isRefreshing = true;
+          try {
+            const refreshed = await this._refreshAccessToken();
+            this.isRefreshing = false;
 
-              if (refreshed) {
-                originalRequest.headers.Authorization = `Bearer ${this.accessToken}`;
-                return this.client(originalRequest);
-              } else {
-                this._handleAuthFailure();
-                return Promise.reject(error);
-              }
-            } catch (err) {
-              this.isRefreshing = false;
+            if (refreshed) {
+              this.failedQueue.forEach(pending => {
+                pending.config.headers.Authorization = `Bearer ${this.accessToken}`;
+                this.client(pending.config).then(pending.resolve).catch(pending.reject);
+              });
+              this.failedQueue = [];
+              originalRequest.headers.Authorization = `Bearer ${this.accessToken}`;
+              return this.client(originalRequest);
+            } else {
+              this.failedQueue.forEach(pending => pending.reject(error));
+              this.failedQueue = [];
               this._handleAuthFailure();
-              return Promise.reject(err);
+              return Promise.reject(error);
             }
+          } catch (err) {
+            this.isRefreshing = false;
+            this.failedQueue.forEach(pending => pending.reject(err));
+            this.failedQueue = [];
+            this._handleAuthFailure();
+            return Promise.reject(err);
           }
         }
 
@@ -136,13 +148,7 @@ class ApiClient {
 
   _formatError(error) {
     if (error.response) {
-      let message = error.response.data?.error || error.response.data?.message || error.response.statusText;
-        if (error.response.status === 409) {
-            message = error.response.data?.error || 'Пользователь с таким email уже существует';
-        }
-        if (error.response.status === 403) {
-            message = error.response.data?.error || 'Недостаточно прав для выполнения операции';
-        }
+      const message = error.response.data?.error || error.response.data?.message || error.response.statusText;
       return {
         status: error.response.status,
         message: message,

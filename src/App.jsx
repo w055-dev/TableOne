@@ -405,7 +405,7 @@ function App() {
   }
 
   return (
-    <Router basename="/TableOne">
+    <Router basename="/TableOne/">
       <Navigation 
         isAuthenticated={!!currentUser}
         user={currentUser}
