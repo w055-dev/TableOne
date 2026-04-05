@@ -7,11 +7,10 @@ import LoginPage from './pages/LoginPage';
 import TablesPage from './pages/TablesPage';
 import OrderPage from './pages/OrderPage';
 import MenuPage from './pages/MenuPage';
-import MenuSheet from './components/MenuSheet';
+import KitchenPage from './pages/KitchenPage';
 import Modal from './components/Modal';
 import AdminPanel from './components/AdminPanel';
 import apiClient from './api/client';
-import KitchenPanel from './components/KitchenPanel';
 import MenuRedactor from './pages/MenuRedactor';
 import UserRedactor from './pages/UserRedactor';
 
@@ -20,6 +19,7 @@ function App() {
   const [selectedTable, setSelectedTable] = useState(null);
   const [bookingInfo, setBookingInfo] = useState(null);
   const [quantities, setQuantities] = useState({});
+  const [dishComments, setDishComments] = useState({});
   const [orders, setOrders] = useState([]);
   const [tables, setTables] = useState([]);
   const [dishQueue, setDishQueue] = useState([]);
@@ -29,7 +29,6 @@ function App() {
   const [showModal, setShowModal] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  // Загрузка начальных данных
   useEffect(() => {
     const loadInitialData = async () => {
       try {
@@ -200,10 +199,21 @@ function App() {
       const newQty = (prev[itemIndex] || 0) + delta;
       if (newQty <= 0) {
         const { [itemIndex]: _, ...rest } = prev;
+        setDishComments(prevComments => {
+          const {[itemIndex]: __, ...restComments} = prevComments;
+          return restComments;
+        });
         return rest;
       }
       return { ...prev, [itemIndex]: newQty };
     });
+  };
+
+  const handleDishCommentChange = (itemIndex, comment) => {
+    setDishComments(prev => ({
+      ...prev,
+      [itemIndex]: comment
+    }));
   };
 
   const handlePay = () => {
@@ -219,7 +229,7 @@ function App() {
             name: menuItems[parseInt(idx)].name,
             quantity: qty,
             dishId: menuItems[parseInt(idx)].id,
-            comment: ''
+            comment: dishComments[parseInt(idx)] || ''
         }));
 
         await apiClient.createOrder(
@@ -241,6 +251,7 @@ function App() {
         }
 
         setQuantities({});
+        setDishComments({});
         setShowModal(false);
         setBookingInfo(null);
         setSelectedTable(null);
@@ -258,6 +269,7 @@ function App() {
   const handleBackToTables = () => {
     setBookingInfo(null);
     setQuantities({});
+    setDishComments({});
   };
 
   const handleServed = async (orderId, dishIdx) => {
@@ -413,7 +425,9 @@ function App() {
                 bookingInfo={bookingInfo}
                 quantities={quantities}
                 menuItems={menuItems}
+                dishComments={dishComments}
                 onQuantityChange={handleQuantityChange}
+                onDishCommentChange={handleDishCommentChange}
                 onPay={handlePay}
                 onBack={handleBackToTables}
               />
@@ -440,7 +454,7 @@ function App() {
         
         <Route path="/kitchen" element={
           <ProtectedRoute allowedRoles={['chef', 'admin']}>
-            <KitchenPanel
+            <KitchenPage
               queue={dishQueue}
               onStartCooking={handleStartCooking}
               onComplete={handleCompleteDish}

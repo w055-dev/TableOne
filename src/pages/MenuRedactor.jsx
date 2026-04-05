@@ -8,7 +8,10 @@ const MenuRedactor = ({ menuItems, onUpdateMenu, onCreateDish, onDeleteDish }) =
     category: 'Закуски',
     weight: '',
     description: '',
-    recipe: ''
+    recipe: '',
+    recipe: '',
+    cookingTime: '',
+    ingredients: ''
   });
 
   const handleEdit = (item) => {
@@ -31,7 +34,9 @@ const MenuRedactor = ({ menuItems, onUpdateMenu, onCreateDish, onDeleteDish }) =
         category: 'Закуски',
         weight: '',
         description: '',
-        recipe: ''
+        recipe: '',
+        cookingTime: '',
+        ingredients: ''
       });
     } else {
       alert('Заполните название,цену и вес блюда');
@@ -92,6 +97,24 @@ const MenuRedactor = ({ menuItems, onUpdateMenu, onCreateDish, onDeleteDish }) =
             value={newDish.recipe}
             onChange={(e) => setNewDish({...newDish, recipe: e.target.value})}
           />
+           <input
+            type="text"
+            placeholder="Время приготовления"
+            value={newDish.cookingTime}
+            onChange={(e) => setNewDish({...newDish, cookingTime: e.target.value})}
+          />
+          <input
+            type="text"
+            placeholder="Ингредиенты"
+            value={newDish.ingredients}
+            onChange={(e) => setNewDish({...newDish, ingredients: e.target.value})}
+          />
+          <input
+            type="text"
+            placeholder="Описание"
+            value={newDish.description}
+            onChange={(e) => setNewDish({...newDish, description: e.target.value})}
+          />
           <button className="btn" onClick={handleCreate}>Добавить</button>
         </div>
       </div>
@@ -123,9 +146,22 @@ const MenuRedactor = ({ menuItems, onUpdateMenu, onCreateDish, onDeleteDish }) =
                     <option>Напитки</option>
                     <option>Десерты</option>
                   </select>
+                  <input
+                    value={editingItem.description}
+                    onChange={(e) => setEditingItem({...editingItem, description: e.target.value})}  
+                  />
+                  <input
+                    value={editingItem.recipe}
+                    onChange={(e) => setEditingItem({...editingItem, recipe: e.target.value})}  
+                  />
+                  <input
+                    type="number"
+                    value={editingItem.cookingTime}
+                    onChange={(e) => setEditingItem({...editingItem, cookingTime: e.target.value})}  
+                  />
                   <div className="edit-actions">
-                    <button onClick={handleSave}>Сохранить</button>
-                    <button onClick={() => setEditingItem(null)}>Отмена</button>
+                    <button className='btn btn-save' onClick={handleSave}>Сохранить</button>
+                    <button className='btn btn-cancel' onClick={() => setEditingItem(null)}>Отмена</button>
                   </div>
                 </>
               ) : (
@@ -134,9 +170,12 @@ const MenuRedactor = ({ menuItems, onUpdateMenu, onCreateDish, onDeleteDish }) =
                   <p>Цена: {item.price} ₽</p>
                   <p>Категория: {item.category}</p>
                   <p>Вес: {item.weight}</p>
+                  <p>Описание: {item.description}</p>
+                  <p>Рецепт: {item.recipe}</p>
+                  <p>Время готовки: {item.cookingTime}</p>
                   <div className="dish-actions">
-                    <button onClick={() => handleEdit(item)}>Редактировать</button>
-                    <button onClick={() => handleDelete(item.id)}>Удалить</button>
+                    <button className='btn btn-edit' onClick={() => handleEdit(item)}>Редактировать</button>
+                    <button className='btn btn-delete' onClick={() => handleDelete(item.id)}>Удалить</button>
                   </div>
                 </>
               )}

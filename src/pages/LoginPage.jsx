@@ -41,12 +41,6 @@ const LoginPage = ({ onLogin }) => {
           return;
         }
         
-        if (formData.password.length < 6) {
-          setError('Пароль должен содержать минимум 6 символов');
-          setLoading(false);
-          return;
-        }
-        
         await apiClient.register(formData.name, formData.email, formData.password);
         const user = await apiClient.login(formData.email, formData.password);
         onLogin(user);

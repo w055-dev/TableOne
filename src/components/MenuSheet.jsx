@@ -1,13 +1,17 @@
-import React from 'react';
+import React, { useState } from 'react';
 
 const MenuSheet = ({ 
   bookingInfo, 
   quantities, 
   menuItems = [],
+  dishComments = {},
+  onDishCommentChange,
   onQuantityChange, 
   onPay, 
   onBack 
 }) => {
+  const [activeCommentIndex, setActiveCommentIndex] = useState(null);
+
   const calculateTotal = () => {
     return Object.entries(quantities).reduce((sum, [idx, qty]) => 
       sum + menuItems[parseInt(idx)]?.price * qty || 0, 0
@@ -50,6 +54,8 @@ const MenuSheet = ({
               <div className="menu-items-grid">
                 {items.map(item => {
                   const qty = quantities[item.originalIndex] || 0;
+                  const comment = dishComments[item.originalIndex] || '';
+                  const isCommentActive = activeCommentIndex === item.originalIndex;
                   return (
                     <div key={item.id} className="menu-item-card">
                       <div className="menu-item-image">
@@ -74,6 +80,29 @@ const MenuSheet = ({
                           </>
                         )}
                       </div>
+                        {qty > 0 && (
+                          <button 
+                            className="btn-comment"
+                            onClick={() => setActiveCommentIndex(isCommentActive ? null : item.originalIndex)}
+                          >
+                            {comment ? 'Изменить' : 'Комментарий'}
+                          </button>
+                        )}
+                        {isCommentActive && qty > 0 && (
+                          <input
+                            type="text"
+                            placeholder="Пожелания к блюду"
+                            defaultValue={comment}
+                            onBlur={(e) => onDishCommentChange(item.originalIndex, e.target.value)}
+                            className="comment-input"
+                            autoFocus
+                          />
+                        )}
+                        {comment && qty > 0 && !isCommentActive && (
+                          <div className="comment-badge">
+                            <span>{comment}</span>
+                          </div>
+                        )}
                     </div>
                   );
                 })}

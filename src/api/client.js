@@ -136,7 +136,7 @@ class ApiClient {
 
   _formatError(error) {
     if (error.response) {
-      let message = error.response.data?.message || error.response.statusText;
+      let message = error.response.data?.error || error.response.data?.message || error.response.statusText;
         if (error.response.status === 409) {
             message = error.response.data?.error || 'Пользователь с таким email уже существует';
         }
@@ -145,7 +145,7 @@ class ApiClient {
         }
       return {
         status: error.response.status,
-        message: error.response.data?.message || error.response.statusText,
+        message: message,
       };
     } else if (error.request) {
       return {

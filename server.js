@@ -26,8 +26,8 @@ const ROLES = {
 
 const JWT_SECRET = "TableOne_access_secret_key";
 const REFRESH_SECRET = "Table_refresh_secret_key";
-const ACCESS_EXPIRES_IN = "15m";
-const REFRESH_EXPIRES_IN = "7d";
+const ACCESS_EXPIRES_IN = "45m";
+const REFRESH_EXPIRES_IN = "1d";
 
 let refreshTokens = [];
 let users = [...initialUsers];
@@ -424,7 +424,7 @@ app.get('/api/menu/:id', (req, res) => {
 });
 
 app.post('/api/menu', authenticateToken, authorize(ROLES.ADMIN), (req, res) => {
-    const { name, price, category, weight, description, image, recipe } = req.body;
+    const { name, price, category, weight, description, image, recipe, cookingTime, ingredients } = req.body;
     
     if (!name || !price || !category || !weight) {
         return res.status(400).json({ error: "Название, цена, категория и вес блюда обязательны" });
@@ -438,7 +438,9 @@ app.post('/api/menu', authenticateToken, authorize(ROLES.ADMIN), (req, res) => {
         weight: weight || '',
         description: description || '',
         image: image || '/images/default.jpg',
-        recipe: recipe || ''
+        recipe: recipe || '',
+        cookingTime: cookingTime || '15 минут',
+        ingredients: ingredients || 'Ингредиенты не указаны'
     };
     
     menuItems.push(newItem);
