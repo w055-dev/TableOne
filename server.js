@@ -484,7 +484,7 @@ app.get('/api/tables', authenticateToken, (req, res) => {
     res.json(tables);
 });
 
-app.post('/api/tables/:id/book', authenticateToken, authorize(ROLES.CLIENT, ROLES.WAITER, ROLES.ADMIN), (req, res) => {
+app.post('/api/tables/:id/book', authenticateToken, authorize(ROLES.CLIENT, ROLES.WAITER, ROLES.CHEF ,ROLES.ADMIN), (req, res) => {
     const tableId = parseInt(req.params.id);
     const { timeSlot } = req.body;
     
@@ -543,7 +543,7 @@ app.post('/api/tables/:id/book', authenticateToken, authorize(ROLES.CLIENT, ROLE
     });
 });
 
-app.post('/api/orders', authenticateToken, authorize(ROLES.CLIENT, ROLES.WAITER, ROLES.ADMIN), (req, res) => {
+app.post('/api/orders', authenticateToken, authorize(ROLES.CLIENT, ROLES.CHEF, ROLES.WAITER, ROLES.ADMIN), (req, res) => {
     const { tableId, timeSlot, dishes, clientName } = req.body;
     
     if (!tableId || !timeSlot || !dishes || dishes.length === 0) {
@@ -598,7 +598,7 @@ app.post('/api/orders', authenticateToken, authorize(ROLES.CLIENT, ROLES.WAITER,
     res.status(201).json(newOrder);
 });
 
-app.get('/api/orders', authenticateToken, authorize(ROLES.CLIENT,ROLES.ADMIN, ROLES.WAITER), (req, res) => {
+app.get('/api/orders', authenticateToken, authorize(ROLES.CLIENT,ROLES.ADMIN, ROLES.WAITER, ROLES.CHEF), (req, res) => {
     res.json(orders);
 });
 
